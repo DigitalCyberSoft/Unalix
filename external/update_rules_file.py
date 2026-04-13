@@ -1,28 +1,24 @@
 import json
-import http.client
-import urllib.parse
+import os
+import subprocess
 
-rules_url = "https://rules1.clearurls.xyz/data/data.minify.json"
-rules_path = "unalix/package_data/rulesets/data.min.json"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+submodule_path = os.path.join(script_dir, "clearurls-rules")
+submodule_rules = os.path.join(submodule_path, "data.min.json")
+rules_path = os.path.join(script_dir, "..", "unalix", "package_data", "rulesets", "data.min.json")
 
-url = urllib.parse.urlparse(rules_url)
+# Update the submodule to latest upstream
+print("Updating ClearURLs/Rules submodule...")
+subprocess.run(["git", "submodule", "update", "--remote", "external/clearurls-rules"], check=True)
 
-connection = http.client.HTTPSConnection(
-	host = url.netloc,
-	port = url.port
-)
+print(f"Reading rules from {submodule_rules}...")
 
-print(f"Fetching data from {rules_url}...")
+with open(file=submodule_rules, mode="r") as file:
+    rules = json.loads(file.read())
 
-connection.request(
-	method = "GET",
-	url = url.path
-)
-response = connection.getresponse()
+print(f"Loaded {len(rules['providers'])} providers")
 
-content = content = response.read()
+with open(file=rules_path, mode="w") as file:
+    file.write(json.dumps(rules, indent=4))
 
-rules = json.loads(content)
-
-with open(file = rules_path, mode = "w") as file:
-    file.write(json.dumps(rules, indent = 4))
+print(f"Written to {rules_path}")

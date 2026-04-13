@@ -28,6 +28,8 @@
 """
 from .core.url_cleaner import clear_url
 from .core.url_unshort import unshort_url, aunshort_url
+from .core.coreutils import rulesets_from_files, rulesets_from_dict
+from .core.homograph import detect_homograph
 from .core.cookie_policies import (
     COOKIE_REJECT_ALL,
     COOKIE_ALLOW_ALL,
@@ -58,7 +60,10 @@ __all__ = [
     "COOKIE_ALLOW_ALL",
     "COOKIE_STRICT_ALLOW",
     "SSL_CONTEXT_VERIFIED",
-    "SSL_CONTEXT_UNVERIFIED"
+    "SSL_CONTEXT_UNVERIFIED",
+    "rulesets_from_files",
+    "rulesets_from_dict",
+    "detect_homograph"
 ]
 
 __locals = locals()

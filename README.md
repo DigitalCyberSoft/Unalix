@@ -1,54 +1,87 @@
 # Unalix
 
-Unalix is a library written in Python, it implements the specification used by the [ClearURLs](https://github.com/ClearURLs/Addon) addon for removing tracking fields from URLs.
+Unalix is a dependency-free Python library for removing tracking fields from URLs, following the [ClearURLs](https://github.com/ClearURLs/Addon) specification.
+
+This is an actively maintained fork of [AmanoTeam/Unalix](https://github.com/AmanoTeam/Unalix), which has been unmaintained since February 2022. This fork adds extended tracking parameter coverage, a custom rules API, IDN homograph attack detection, SSRF protections, and automated ruleset updates.
+
+## What's new in this fork
+
+- **Extended ruleset** (`unalix_extended.json`) -- 25 additional tracking parameters (Google Ads, Microsoft, TikTok, LinkedIn, HubSpot, MailChimp, etc.) and 7 redirect services (Slack, Skimlinks, CJ Affiliate, etc.) not covered by ClearURLs
+- **Custom rules API** -- `rulesets_from_dict()` and `custom_rulesets` parameter on `clear_url()` for user-defined rulesets
+- **Homograph detection** -- `detect_homograph()` identifies IDN homograph attacks using Cyrillic/Greek/fullwidth lookalike characters
+- **Security hardening** -- SSRF protection in `unshort_url()`, capped Retry-After sleep, fixed IPv6 parsing, forward-secret-only TLS ciphers, proper cookie policy subclasses
+- **Automated updates** -- GitHub Actions for weekly ClearURLs ruleset and CA bundle updates via PR
+- **Updated data** -- ClearURLs rules updated from 173 to 206 providers, CA bundle updated to 2026
+- **Comprehensive tests** -- 116 tests (up from 2), covering real-world URLs from clean-url, url-tracking-stripper, Link Cleaner+, and link-cleaner-pro
 
 ## Installation
 
-Install using `pip`:
+Install from this fork:
 
 ```bash
-python3 -m pip install --force-reinstall \
-    --disable-pip-version-check \
-    --upgrade \
-    'unalix'
+pip install 'https://codeload.github.com/DigitalCyberSoft/Unalix/tar.gz/refs/heads/master'
 ```
 
-The version from git might be broken sometimes, but you can also install from it:
+_**Note**: Unalix requires Python 3.8 or higher._
 
-```bash
-python3 -m pip install --force-reinstall \
-    --disable-pip-version-check \
-    --upgrade \
-    'https://codeload.github.com/AmanoTeam/Unalix/tar.gz/refs/heads/master'
-```
+## Usage
 
-_**Note**: Unalix requires Python 3.6 or higher._
-
-## Usage:
-
-Removing tracking fields:
+### Removing tracking fields
 
 ```python
 import unalix
 
-url: str = "https://deezer.com/track/891177062?utm_source=deezer"
-result: str = unalix.clear_url(url=url)
+url = "https://example.com/page?utm_source=google&fbclid=abc&gclid=xyz"
+result = unalix.clear_url(url)
 
-assert result == "https://deezer.com/track/891177062"
+assert result == "https://example.com/page"
 ```
 
-Resolving shortened URL:
+### Resolving shortened URLs
 
 ```python
 import unalix
 
-url: str = "https://bitly.is/Pricing-Pop-Up"
-result: str = unalix.unshort_url(url=url)
+url = "https://bitly.is/Pricing-Pop-Up"
+result = unalix.unshort_url(url)
 
 assert result == "https://bitly.com/pages/pricing"
 ```
 
-_**Tip**: The `unshort_url()` method will strip tracking fields from any URL before following a redirect, so you don't need to manually call `clear_url()` for it's return value._
+_**Tip**: `unshort_url()` strips tracking fields from every URL before following a redirect, so you don't need to call `clear_url()` separately on its return value._
+
+### Custom rules
+
+```python
+import unalix
+
+custom = unalix.rulesets_from_dict({
+    "providers": {
+        "myapp": {
+            "urlPattern": ".*",
+            "rules": ["my_tracking_param"]
+        }
+    }
+})
+
+url = "https://example.com/?my_tracking_param=abc&page=1"
+result = unalix.clear_url(url, custom_rulesets=custom)
+
+assert result == "https://example.com/?page=1"
+```
+
+### Homograph attack detection
+
+```python
+import unalix
+
+# Cyrillic 'о' (U+043E) masquerading as Latin 'o'
+result = unalix.detect_homograph("https://g\u043e\u043egle.com")
+
+assert result is not None
+assert result["normalized"] == "google.com"
+assert result["target"] == "google.com"
+```
 
 ## Contributing
 

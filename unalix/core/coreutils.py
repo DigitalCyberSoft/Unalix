@@ -7,6 +7,17 @@ import sys
 from .. import types
 
 
+# Maximum allowed length for a regex pattern from user-supplied rulesets
+_MAX_PATTERN_LENGTH = 2048
+
+
+def _safe_compile(pattern, flags=0):
+    """Compile a regex pattern with basic safety checks against ReDoS."""
+    if len(pattern) > _MAX_PATTERN_LENGTH:
+        raise re.error(f"Pattern exceeds maximum allowed length of {_MAX_PATTERN_LENGTH}")
+    return re.compile(pattern, flags)
+
+
 def rulesets_from_files(iterable_of_paths: typing.Iterable, ignored_providers: typing.Optional[typing.Iterable] = None) -> types.Rulesets:
 
     iterable_of_dicts = []
@@ -95,6 +106,71 @@ def rulesets_from_files(iterable_of_paths: typing.Iterable, ignored_providers: t
                     forceRedirection=forceRedirection
                 )
             )
+
+    return rulesets
+
+
+def rulesets_from_dict(ruleset_dict: dict, ignored_providers: typing.Optional[typing.Iterable] = None) -> types.Rulesets:
+
+    rulesets = types.Rulesets()
+
+    for providerName in ruleset_dict["providers"].keys():
+
+        if ignored_providers is not None and providerName in ignored_providers:
+            continue
+
+        provider = ruleset_dict["providers"][providerName]
+
+        urlPattern = types.Pattern(provider["urlPattern"])
+        urlPattern.compiled = _safe_compile(urlPattern)
+
+        completeProvider = provider.get("completeProvider", False)
+
+        rules = types.Patterns()
+        for rule in provider.get("rules", []):
+            pattern = types.Pattern(rule)
+            pattern.compiled = _safe_compile(rf"(%(?:26|23)|&|^){rule}(?:(?:=|%3[Dd])[^&]*)")
+            rules.append(pattern)
+
+        rawRules = types.Patterns()
+        for rawRule in provider.get("rawRules", []):
+            pattern = types.Pattern(rawRule)
+            pattern.compiled = _safe_compile(rawRule)
+            rawRules.append(pattern)
+
+        referralMarketing = types.Patterns()
+        for referral in provider.get("referralMarketing", []):
+            pattern = types.Pattern(referral)
+            pattern.compiled = _safe_compile(rf"(%(?:26|23)|&|^){referral}(?:(?:=|%3[Dd])[^&]*)")
+            referralMarketing.append(pattern)
+
+        exceptions = types.Patterns()
+        for exception in provider.get("exceptions", []):
+            pattern = types.Pattern(exception)
+            pattern.compiled = _safe_compile(exception)
+            exceptions.append(pattern)
+
+        redirections = types.Patterns()
+        for redirection in provider.get("redirections", []):
+            pattern = types.Pattern(redirection)
+            pattern.compiled = _safe_compile(f"{redirection}.*")
+            redirections.append(pattern)
+
+        forceRedirection = provider.get("forceRedirection", False)
+
+        rulesets.add_ruleset(
+            types.Ruleset(
+                providerName=providerName,
+                urlPattern=urlPattern,
+                completeProvider=completeProvider,
+                rules=rules,
+                rawRules=rawRules,
+                referralMarketing=referralMarketing,
+                exceptions=exceptions,
+                redirections=redirections,
+                forceRedirection=forceRedirection
+            )
+        )
 
     return rulesets
 
@@ -190,23 +266,18 @@ def create_ssl_context(
         context.check_hostname = False if unverified else True
         context.verify_mode = ssl.CERT_NONE if unverified else ssl.CERT_REQUIRED
 
-    # Ciphers list for HTTPS connections
+    # Ciphers list for HTTPS connections — forward-secret only
     ssl_ciphers = ":".join(
         (
             "ECDHE+AESGCM",
             "ECDHE+CHACHA20",
             "DHE+AESGCM",
             "DHE+CHACHA20",
-            "ECDH+AESGCM",
-            "DH+AESGCM",
-            "ECDH+AES",
-            "DH+AES",
-            "RSA+AESGCM",
-            "RSA+AES",
             "!aNULL",
             "!eNULL",
             "!MD5",
-            "!DSS"
+            "!DSS",
+            "!RSA"
         )
     )
 

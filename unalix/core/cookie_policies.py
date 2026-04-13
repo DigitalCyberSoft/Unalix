@@ -8,16 +8,25 @@ from . import coreutils
 
 ALLOWED_DOMAINS = coreutils.domains_from_files(config.PATH_COOKIES_ALLOW)
 
-# reject all cookies
-COOKIE_REJECT_ALL = http.cookiejar.DefaultCookiePolicy()
-COOKIE_REJECT_ALL.set_ok = lambda cookie, request: False
 
-# allow all cookies
-COOKIE_ALLOW_ALL = http.cookiejar.DefaultCookiePolicy()
-COOKIE_ALLOW_ALL.set_ok = lambda cookie, request: True
+class RejectAllCookiePolicy(http.cookiejar.DefaultCookiePolicy):
+    def set_ok(self, cookie, request):
+        return False
 
-# only allow cookies for domains that are known to not work without them
-COOKIE_STRICT_ALLOW = http.cookiejar.DefaultCookiePolicy()
-COOKIE_STRICT_ALLOW.set_ok = lambda cookie, request: (
-    True if cookie.domain in ALLOWED_DOMAINS else False
-)
+
+class AllowAllCookiePolicy(http.cookiejar.DefaultCookiePolicy):
+    def set_ok(self, cookie, request):
+        return True
+
+
+class StrictAllowCookiePolicy(http.cookiejar.DefaultCookiePolicy):
+    """Only allow cookies for domains that are known to not work without them."""
+    def set_ok(self, cookie, request):
+        if cookie.domain in ALLOWED_DOMAINS:
+            return super().set_ok(cookie, request)
+        return False
+
+
+COOKIE_REJECT_ALL = RejectAllCookiePolicy()
+COOKIE_ALLOW_ALL = AllowAllCookiePolicy()
+COOKIE_STRICT_ALLOW = StrictAllowCookiePolicy()

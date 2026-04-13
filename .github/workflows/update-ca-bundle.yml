@@ -1,0 +1,49 @@
+name: Update CA certificate bundle
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 6am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-ca-bundle:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Update CA bundle
+      run: python external/update_ca_bundle.py
+
+    - name: Check for changes
+      id: diff
+      run: |
+        if git diff --quiet unalix/package_data/ca/ca-bundle.crt; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          BUNDLE_DATE=$(head -5 unalix/package_data/ca/ca-bundle.crt | grep -oP 'last updated on: \K.*')
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "bundle_date=$BUNDLE_DATE" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.diff.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        branch: auto/update-ca-bundle
+        commit-message: "Update CA certificate bundle"
+        title: "Update CA certificate bundle"
+        body: |
+          Automated update of the bundled CA certificate bundle from [curl.se](https://curl.se/ca/cacert.pem).
+
+          Bundle date: ${{ steps.diff.outputs.bundle_date }}
+        delete-branch: true

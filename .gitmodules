@@ -1,0 +1,3 @@
+[submodule "external/clearurls-rules"]
+	path = external/clearurls-rules
+	url = https://github.com/ClearURLs/Rules.git

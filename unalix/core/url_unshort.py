@@ -34,6 +34,7 @@ def unshort_url(
     context: typing.Optional[ssl.SSLContext] = None,
     max_retries:  typing.Optional[int] = None,
     status_retry:  typing.Optional[typing.Iterable[typing.Union[int, http.HTTPStatus]]] = None,
+    allow_private: typing.Optional[bool] = False,
     **kwargs: typing.Any
 ):
     """
@@ -167,6 +168,12 @@ def unshort_url(
         else:
             url = types.URL(url)
 
+        if not allow_private and url.islocal():
+            raise exceptions.UnsupportedProtocolError(
+                message="Connections to private/local addresses are blocked (use allow_private=True to override)",
+                url=url
+            ) from None
+
         if url.scheme == "http":
             connection = http.client.HTTPConnection(
                 host=url.netloc,
@@ -247,11 +254,16 @@ def unshort_url(
             if http_max_retries > 0 and response.code in http_status_retry:
                 retry_after = response.headers.get("Retry-After")
                 if retry_after is not None:
-                    if retry_after.isnumeric():
-                        time.sleep(int(retry_after))
+                    if retry_after.isdigit():
+                        retry_delay = min(int(retry_after), 60)
                     else:
-                        http_date = datetime.datetime.strptime(retry_after, "%a, %d %b %Y %H:%M:%S GMT")
-                        time.sleep(int(http_date.timestamp()) - int(time.time()))
+                        try:
+                            http_date = datetime.datetime.strptime(retry_after, "%a, %d %b %Y %H:%M:%S GMT")
+                            retry_delay = min(max(0, int(http_date.timestamp()) - int(time.time())), 60)
+                        except ValueError:
+                            retry_delay = 0
+                    if retry_delay > 0:
+                        time.sleep(retry_delay)
                 
                 total_retries += 1
                 
@@ -270,14 +282,18 @@ def unshort_url(
         if response.status in config.http.HTTP_STATUS_REDIRECT:
             # Handle HTTP redirects
             redirect_location = response.headers.get("Location")
-            assert redirect_location is not None
+            if redirect_location is None:
+                raise exceptions.ConnectError(
+                    message="Redirect response missing Location header",
+                    url=url
+                ) from None
         else:
             # If there is no "Location", we will look for "Content-Location"
             redirect_location = response.headers.get("Content-Location")
 
         if redirect_location is not None:
             # https://stackoverflow.com/a/27357138
-            utils.requote_uri(
+            redirect_location = utils.requote_uri(
                 redirect_location.encode(encoding="latin1").decode(encoding='utf-8')
             )
 
@@ -369,6 +385,7 @@ async def aunshort_url(
     context: typing.Optional[ssl.SSLContext] = None,
     max_retries:  typing.Optional[int] = None,
     status_retry:  typing.Optional[typing.Iterable[typing.Union[int, http.HTTPStatus]]] = None,
+    allow_private: typing.Optional[bool] = False,
     **kwargs: typing.Any
 ):
     """
@@ -503,6 +520,12 @@ async def aunshort_url(
         else:
             url = types.URL(url)
 
+        if not allow_private and url.islocal():
+            raise exceptions.UnsupportedProtocolError(
+                message="Connections to private/local addresses are blocked (use allow_private=True to override)",
+                url=url
+            ) from None
+
         if url.scheme == "http":
             future = asyncio.open_connection(
                 host=url.netloc,
@@ -527,13 +550,13 @@ async def aunshort_url(
             reader, writer = await asyncio.wait_for(fut=future, timeout=http_timeout)
 
             raw_request = (
-                f"{http_method} {f'{url.path}?{url.query}' if url.query else (url.path if url.path else '/')} HTTP/1.0\n" +
-                f"Host: {url.netloc}\n"
+                f"{http_method} {f'{url.path}?{url.query}' if url.query else (url.path if url.path else '/')} HTTP/1.0\r\n" +
+                f"Host: {url.netloc}\r\n"
             )
 
             for key, value in http_headers.items():
-                raw_request += f"{key}: {value}\n"
-            raw_request += "\n"
+                raw_request += f"{key}: {value}\r\n"
+            raw_request += "\r\n"
 
             writer.write(
                 data=raw_request.encode(encoding="latin-1")
@@ -600,11 +623,16 @@ async def aunshort_url(
             if http_max_retries > 0 and response.status_code in http_status_retry:
                 retry_after = response.headers.get("Retry-After")
                 if retry_after is not None:
-                    if retry_after.isnumeric():
-                        await asyncio.sleep(int(retry_after))
+                    if retry_after.isdigit():
+                        retry_delay = min(int(retry_after), 60)
                     else:
-                        http_date = datetime.datetime.strptime(retry_after, "%a, %d %b %Y %H:%M:%S GMT")
-                        await asyncio.sleep(int(http_date.timestamp()) - int(time.time()))
+                        try:
+                            http_date = datetime.datetime.strptime(retry_after, "%a, %d %b %Y %H:%M:%S GMT")
+                            retry_delay = min(max(0, int(http_date.timestamp()) - int(time.time())), 60)
+                        except ValueError:
+                            retry_delay = 0
+                    if retry_delay > 0:
+                        await asyncio.sleep(retry_delay)
 
                 total_retries += 1
 
@@ -619,14 +647,18 @@ async def aunshort_url(
         if response.status_code in config.http.HTTP_STATUS_REDIRECT:
             # Handle HTTP redirects
             redirect_location = response.headers.get("Location") or response.headers.get("location")
-            assert redirect_location is not None
+            if redirect_location is None:
+                raise exceptions.ConnectError(
+                    message="Redirect response missing Location header",
+                    url=url
+                ) from None
         else:
             # If there is no "Location", we will look for "Content-Location"
             redirect_location = response.headers.get("Content-Location") or response.headers.get("content-location")
 
         if redirect_location is not None:
             # https://stackoverflow.com/a/27357138
-            utils.requote_uri(
+            redirect_location = utils.requote_uri(
                 redirect_location.encode(encoding="latin1").decode(encoding='utf-8')
             )
 

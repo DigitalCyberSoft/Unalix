@@ -38,7 +38,8 @@ package_data = {
         "package_data/other/redirects_from_body.json",
         "package_data/policies/cookies_allow.json",
         "package_data/rulesets/data.min.json",
-        "package_data/rulesets/unalix.json"
+        "package_data/rulesets/unalix.json",
+        "package_data/rulesets/unalix_extended.json"
     ]
 }
 

@@ -1,0 +1,63 @@
+name: Update ClearURLs ruleset
+
+on:
+  schedule:
+    - cron: '0 6 * * 3'  # Wednesday 6am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-rules:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Count old providers
+      id: old
+      run: |
+        COUNT=$(python -c "import json; print(len(json.load(open('unalix/package_data/rulesets/data.min.json'))['providers']))")
+        echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+    - name: Update submodule to latest upstream
+      run: git -C external/clearurls-rules pull origin master
+
+    - name: Copy updated rules
+      run: python external/update_rules_file.py
+
+    - name: Check for changes
+      id: diff
+      run: |
+        if git diff --quiet unalix/package_data/rulesets/data.min.json; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          NEW_COUNT=$(python -c "import json; print(len(json.load(open('unalix/package_data/rulesets/data.min.json'))['providers']))")
+          UPSTREAM_SHA=$(git -C external/clearurls-rules rev-parse --short HEAD)
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          echo "upstream_sha=$UPSTREAM_SHA" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.diff.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        branch: auto/update-clearurls-rules
+        commit-message: "Update ClearURLs ruleset"
+        title: "Update ClearURLs ruleset"
+        body: |
+          Automated update of the ClearURLs ruleset from [ClearURLs/Rules](https://github.com/ClearURLs/Rules).
+
+          - Providers: ${{ steps.old.outputs.count }} -> ${{ steps.diff.outputs.new_count }}
+          - Upstream commit: ClearURLs/Rules@${{ steps.diff.outputs.upstream_sha }}
+        delete-branch: true
