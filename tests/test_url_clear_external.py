@@ -227,6 +227,98 @@ class TestEdgeCases:
         url = "https://www.google.com/search?q=test"
         assert clear_url(url) == "https://www.google.com/search?q=test"
 
+
+class TestUnalixCustomRules:
+    """Tests for params added to unalix.json that aren't in upstream ClearURLs."""
+
+    # Amazon
+    def test_amazon_asc_params(self):
+        url = "https://www.amazon.com/dp/B00XYZ?asc_refurl=https://example.com&asc_source=web"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    def test_amazon_pf_rd_params(self):
+        url = "https://www.amazon.com/dp/B00XYZ?pf_rd_p=abc&pf_rd_r=def&pf_rd_s=ghi"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    def test_amazon_pd_rd_params(self):
+        url = "https://www.amazon.com/dp/B00XYZ?pd_rd_w=abc&pd_rd_wg=def&pd_rd_r=ghi"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    def test_amazon_hsa_params(self):
+        url = "https://www.amazon.com/dp/B00XYZ?hsa_cam=abc&hsa_grp=def&hsa_ad=ghi"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    def test_amazon_misc_tracking(self):
+        url = "https://www.amazon.com/dp/B00XYZ?adId=abc&sp_csd=def&maas=ghi&visitId=jkl"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    def test_amazon_ascsubtag(self):
+        url = "https://www.amazon.com/dp/B00XYZ?ascsubtag=abc"
+        assert clear_url(url) == "https://www.amazon.com/dp/B00XYZ"
+
+    # AliExpress
+    def test_aliexpress_pvid_and_scenario(self):
+        url = "https://www.aliexpress.com/item/123.html?pvid=abc&scenario=def&browser_id=ghi"
+        assert clear_url(url) == "https://www.aliexpress.com/item/123.html"
+
+    def test_aliexpress_tracking_misc(self):
+        url = "https://www.aliexpress.com/item/123.html?curPageLogUid=abc&clickTime=123&tracelog=def"
+        assert clear_url(url) == "https://www.aliexpress.com/item/123.html"
+
+    def test_aliexpress_pdp_params(self):
+        url = "https://www.aliexpress.com/item/123.html?pdp_npi=abc&pdp_ext_f=def&initiative_id=ghi"
+        assert clear_url(url) == "https://www.aliexpress.com/item/123.html"
+
+    # Facebook
+    def test_facebook_fb_action_types(self):
+        url = "https://www.facebook.com/page?fb_action_types=abc&fb_ref=def&fbadid=ghi"
+        assert clear_url(url) == "https://www.facebook.com/page"
+
+    def test_facebook_fref_and_hrc(self):
+        url = "https://www.facebook.com/page?fref=nf&hrc=abc"
+        assert clear_url(url) == "https://www.facebook.com/page"
+
+    # Google
+    def test_google_sclient(self):
+        url = "https://www.google.com/search?q=test&sclient=gws-wiz"
+        assert clear_url(url) == "https://www.google.com/search?q=test"
+
+    def test_google_tbs_and_prmd(self):
+        url = "https://www.google.com/search?q=test&tbs=qdr:m&prmd=ivns"
+        assert clear_url(url) == "https://www.google.com/search?q=test"
+
+    def test_google_viewport_params(self):
+        url = "https://www.google.com/search?q=test&biw=1920&bih=1080"
+        assert clear_url(url) == "https://www.google.com/search?q=test"
+
+    # Twitter/X
+    def test_twitter_cxt_and_twsrc(self):
+        url = "https://twitter.com/user/status/123?cxt=abc&twsrc=def"
+        assert clear_url(url) == "https://twitter.com/user/status/123"
+
+    def test_x_com_cxt_and_twsrc(self):
+        url = "https://x.com/user/status/123?cxt=abc&twsrc=def"
+        assert clear_url(url) == "https://x.com/user/status/123"
+
+    # LinkedIn
+    def test_linkedin_tracking_params(self):
+        url = "https://www.linkedin.com/feed?originalSubdomain=uk&midToken=abc&trkEmail=def"
+        assert clear_url(url) == "https://www.linkedin.com/feed"
+
+    def test_linkedin_misc_params(self):
+        url = "https://www.linkedin.com/feed?eid=abc&licu=def&_li=ghi"
+        assert clear_url(url) == "https://www.linkedin.com/feed"
+
+    # Instagram
+    def test_instagram_img_index(self):
+        url = "https://www.instagram.com/p/ABC123/?img_index=2"
+        assert clear_url(url) == "https://www.instagram.com/p/ABC123/"
+
+    # YouTube
+    def test_youtube_cbrd_and_ucbcb(self):
+        url = "https://www.youtube.com/watch?v=abc&cbrd=1&ucbcb=1"
+        assert clear_url(url) == "https://www.youtube.com/watch?v=abc"
+
     def test_github_ref_exception(self):
         url = "https://github.com/user/repo?ref=main"
         assert clear_url(url) == "https://github.com/user/repo?ref=main"

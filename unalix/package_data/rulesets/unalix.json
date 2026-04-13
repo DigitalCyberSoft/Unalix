@@ -4,7 +4,7 @@
       "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?amazon(?:\\.[a-z]{2,})",
       "completeProvider": false,
       "rules": [
-        "hv[a-z]{3,6}",
+        "hv[a-z]{3,8}",
         "vtargid",
         "h",
         "hydadcr",
@@ -22,10 +22,26 @@
         "__mk_.+",
         "lmdsid",
         "refinements",
-        "rps"
+        "rps",
+        "asc_[a-z]+",
+        "p[fd]_rd_[a-z]+",
+        "hsa_[a-z]+",
+        "adId",
+        "sp_csd",
+        "maas",
+        "node",
+        "pf",
+        "almBrandId",
+        "ingession",
+        "visitId",
+        "iv",
+        "pldnSite",
+        "srs",
+        "aa_[a-z]+"
       ],
       "referralMarketing": [
-        "tag"
+        "tag",
+        "ascsubtag"
       ],
       "exceptions": [],
       "rawRules": [
@@ -61,7 +77,26 @@
         "bizType",
         "mergeHashcode",
         "description",
-        "templateKey"
+        "templateKey",
+        "afSmartRedirect",
+        "gatewayAdapt",
+        "cn",
+        "algo_exp_id",
+        "pdp_npi",
+        "pdp_ext_f",
+        "social_params",
+        "initiative_id",
+        "pvid",
+        "scenario",
+        "utparam",
+        "_t",
+        "curPageLogUid",
+        "clickTime",
+        "browser_id",
+        "tracelog",
+        "roession",
+        "detailNewVersion",
+        "scm_id"
       ],
       "referralMarketing": [],
       "rawRules": [],
@@ -106,7 +141,14 @@
       "rules": [
         "h",
         "login_source",
-        "_[a-z_]+"
+        "_[a-z_]+",
+        "fb_action_types",
+        "fb_ref",
+        "fbadid",
+        "__eep__",
+        "oe",
+        "fref",
+        "hrc"
       ],
       "referralMarketing": [],
       "rawRules": [],
@@ -146,7 +188,12 @@
         "oe",
         "docid",
         "imgrefurl",
-        "amp"
+        "amp",
+        "sclient",
+        "prmd",
+        "bi[hw]",
+        "tbs",
+        "sca_[a-z]+"
       ],
       "referralMarketing": [],
       "rawRules": [],
@@ -214,11 +261,13 @@
       "forceRedirection": false
     },
     "twitter": {
-      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?twitter\\.com",
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?(?:twitter|x)\\.com",
       "completeProvider": false,
       "rules": [
         "original_referer",
-        "via"
+        "via",
+        "cxt",
+        "twsrc"
       ],
       "referralMarketing": [],
       "rawRules": [],
@@ -685,6 +734,53 @@
       "rules": [
         "ran[A-Za-z]+",
         "LSNPUBID"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "linkedin": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?linkedin\\.com",
+      "completeProvider": false,
+      "rules": [
+        "originalSubdomain",
+        "originalReferer",
+        "isSubdomainTitle",
+        "miniLink",
+        "midToken",
+        "midSig",
+        "otpToken",
+        "trkEmail",
+        "eid",
+        "licu",
+        "_li"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "instagram": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?instagram\\.com",
+      "completeProvider": false,
+      "rules": [
+        "img_index"
+      ],
+      "referralMarketing": [],
+      "rawRules": [],
+      "exceptions": [],
+      "redirections": [],
+      "forceRedirection": false
+    },
+    "youtube": {
+      "urlPattern": "^https?:\\/\\/(?:[a-z0-9-]+\\.)*?(?:youtube\\.com|youtu\\.be)",
+      "completeProvider": false,
+      "rules": [
+        "cbrd",
+        "ucbcb"
       ],
       "referralMarketing": [],
       "rawRules": [],
