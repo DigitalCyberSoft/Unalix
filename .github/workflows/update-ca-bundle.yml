@@ -30,7 +30,7 @@ jobs:
         if git diff --quiet unalix/package_data/ca/ca-bundle.crt; then
           echo "changed=false" >> $GITHUB_OUTPUT
         else
-          BUNDLE_DATE=$(head -5 unalix/package_data/ca/ca-bundle.crt | grep -oP 'last updated on: \K.*')
+          BUNDLE_DATE=$(head -5 unalix/package_data/ca/ca-bundle.crt | grep -oP 'Certificate data from Mozilla[^:]*: \K.*' || true)
           echo "changed=true" >> $GITHUB_OUTPUT
           echo "bundle_date=$BUNDLE_DATE" >> $GITHUB_OUTPUT
         fi
